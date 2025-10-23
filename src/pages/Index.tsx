@@ -318,52 +318,127 @@ export default function Index() {
 
         {activeTab === 'schedule' && (
           <div className="space-y-6 animate-fade-in">
-            <h1 className="text-3xl font-bold">Расписание бронирований</h1>
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold">Расписание бронирований</h1>
+              <Button onClick={() => setActiveTab('booking')}>
+                <Icon name="Plus" size={16} className="mr-2" />
+                Новое бронирование
+              </Button>
+            </div>
             
-            {bookings.length === 0 ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Icon name="Calendar" className="mx-auto mb-4 text-muted-foreground" size={48} />
-                  <h3 className="text-lg font-medium mb-2">Нет бронирований</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Забронируйте переговорную комнату
-                  </p>
-                  <Button onClick={() => setActiveTab('booking')}>
-                    Создать бронирование
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {bookings.map((booking, index) => (
-                  <Card key={index} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Icon name="Calendar" className="text-primary" size={24} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-lg">{booking.roomName}</h3>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                              <span className="flex items-center gap-1">
-                                <Icon name="Clock" size={14} />
-                                {booking.time}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Icon name="CalendarDays" size={14} />
-                                {booking.date}
-                              </span>
+            <Card className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-4 font-semibold text-sm border-b sticky left-0 bg-muted/50 min-w-[180px]">
+                        Время
+                      </th>
+                      {rooms.map((room) => (
+                        <th key={room.id} className="text-left p-4 font-semibold text-sm border-b min-w-[200px]">
+                          <div className="flex items-center gap-2">
+                            <Icon name="DoorOpen" size={16} className="text-primary" />
+                            <div>
+                              <div>{room.name}</div>
+                              <div className="text-xs font-normal text-muted-foreground">
+                                {room.capacity} мест · {room.floor} этаж
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <Badge>Забронировано</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timeSlots.map((slot) => (
+                      <tr key={slot.time} className="border-b hover:bg-accent/50 transition-colors">
+                        <td className="p-4 font-medium sticky left-0 bg-background">
+                          <div className="flex items-center gap-2">
+                            <Icon name="Clock" size={16} className="text-muted-foreground" />
+                            {slot.time}
+                          </div>
+                        </td>
+                        {rooms.map((room) => {
+                          const booking = bookings.find(
+                            b => b.roomId === room.id && b.time === slot.time
+                          );
+                          return (
+                            <td key={room.id} className="p-2">
+                              {booking ? (
+                                <div className="bg-primary/10 border-l-4 border-primary rounded p-3 hover:bg-primary/20 transition-colors cursor-pointer">
+                                  <div className="flex items-center gap-2">
+                                    <Icon name="CheckCircle2" size={14} className="text-primary" />
+                                    <span className="font-medium text-sm">Забронировано</span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {booking.date}
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSelectedRoom(room.id);
+                                    setSelectedTime(slot.time);
+                                    setActiveTab('booking');
+                                  }}
+                                  className="w-full p-3 rounded border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all text-sm text-muted-foreground hover:text-foreground"
+                                >
+                                  Свободно
+                                </button>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon name="Calendar" className="text-primary" size={20} />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold">{bookings.length}</div>
+                      <div className="text-sm text-muted-foreground">Всего броней</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon name="DoorOpen" className="text-primary" size={20} />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold">{rooms.length}</div>
+                      <div className="text-sm text-muted-foreground">Всего комнат</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon name="Clock" className="text-primary" size={20} />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold">{timeSlots.length}</div>
+                      <div className="text-sm text-muted-foreground">Временных слотов</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
       </main>

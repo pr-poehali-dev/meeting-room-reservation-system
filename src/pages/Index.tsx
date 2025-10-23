@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import Icon from '@/components/ui/icon';
 
 type Room = {
@@ -269,26 +271,33 @@ export default function Index() {
 
                 <div>
                   <label className="block text-sm font-medium mb-3">Выберите дату</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {getNextDays(7).map((day, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedDate(day)}
-                        className={`p-3 rounded-lg border-2 text-left transition-all ${
-                          formatDate(selectedDate) === formatDate(day)
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border hover:border-primary/50'
-                        }`}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal h-auto p-4"
                       >
-                        <div className="font-medium text-sm">
-                          {isToday(day) ? 'Сегодня' : isTomorrow(day) ? 'Завтра' : formatDateShort(day)}
+                        <Icon name="CalendarDays" className="mr-2" size={20} />
+                        <div>
+                          <div className="font-medium">
+                            {isToday(selectedDate) ? 'Сегодня' : isTomorrow(selectedDate) ? 'Завтра' : formatDate(selectedDate)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {selectedDate.toLocaleDateString('ru-RU', { weekday: 'long' })}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {day.toLocaleDateString('ru-RU', { weekday: 'short' })}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => date && setSelectedDate(date)}
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div>
@@ -382,31 +391,26 @@ export default function Index() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h1 className="text-3xl font-bold">Расписание бронирований</h1>
               <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => {
-                    const newDate = new Date(selectedDate);
-                    newDate.setDate(newDate.getDate() - 1);
-                    setSelectedDate(newDate);
-                  }}
-                >
-                  <Icon name="ChevronLeft" size={20} />
-                </Button>
-                <div className="px-4 py-2 bg-primary/10 rounded-lg font-medium min-w-[140px] text-center">
-                  {isToday(selectedDate) ? 'Сегодня' : isTomorrow(selectedDate) ? 'Завтра' : formatDateShort(selectedDate)}
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => {
-                    const newDate = new Date(selectedDate);
-                    newDate.setDate(newDate.getDate() + 1);
-                    setSelectedDate(newDate);
-                  }}
-                >
-                  <Icon name="ChevronRight" size={20} />
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <Icon name="CalendarDays" size={16} />
+                      <span className="hidden sm:inline">
+                        {isToday(selectedDate) ? 'Сегодня' : isTomorrow(selectedDate) ? 'Завтра' : formatDateShort(selectedDate)}
+                      </span>
+                      <Icon name="ChevronDown" size={14} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
                 <Button onClick={() => setActiveTab('booking')}>
                   <Icon name="Plus" size={16} className="mr-2" />
                   <span className="hidden sm:inline">Новое бронирование</span>

@@ -48,17 +48,47 @@ export default function Index() {
   const [activeTab, setActiveTab] = useState<'home' | 'booking' | 'rooms' | 'schedule'>('home');
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
 
+  const getNextDays = (count: number) => {
+    const days = [];
+    for (let i = 0; i < count; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() + i);
+      days.push(date);
+    }
+    return days;
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const formatDateShort = (date: Date) => {
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  };
+
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  const isTomorrow = (date: Date) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return date.toDateString() === tomorrow.toDateString();
+  };
+
   const handleBooking = () => {
-    if (selectedRoom && selectedTime) {
+    if (selectedRoom && selectedTime && selectedDate) {
       const room = rooms.find(r => r.id === selectedRoom);
       if (room) {
         const newBooking: Booking = {
           roomId: room.id,
           roomName: room.name,
           time: selectedTime,
-          date: new Date().toLocaleDateString('ru-RU'),
+          date: formatDate(selectedDate),
         };
         setBookings([...bookings, newBooking]);
         setSelectedRoom(null);
@@ -238,24 +268,55 @@ export default function Index() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-3">Выберите время</label>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                    {timeSlots.map((slot) => (
+                  <label className="block text-sm font-medium mb-3">Выберите дату</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {getNextDays(7).map((day, index) => (
                       <button
-                        key={slot.time}
-                        onClick={() => slot.available && setSelectedTime(slot.time)}
-                        disabled={!slot.available}
-                        className={`p-3 rounded-lg border-2 font-medium transition-all ${
-                          selectedTime === slot.time
-                            ? 'border-primary bg-primary text-white'
-                            : slot.available
-                            ? 'border-border hover:border-primary/50'
-                            : 'border-border bg-muted text-muted-foreground cursor-not-allowed'
+                        key={index}
+                        onClick={() => setSelectedDate(day)}
+                        className={`p-3 rounded-lg border-2 text-left transition-all ${
+                          formatDate(selectedDate) === formatDate(day)
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
                         }`}
                       >
-                        {slot.time}
+                        <div className="font-medium text-sm">
+                          {isToday(day) ? 'Сегодня' : isTomorrow(day) ? 'Завтра' : formatDateShort(day)}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {day.toLocaleDateString('ru-RU', { weekday: 'short' })}
+                        </div>
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-3">Выберите время</label>
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    {timeSlots.map((slot) => {
+                      const isBooked = bookings.some(
+                        b => b.roomId === selectedRoom && 
+                             b.time === slot.time && 
+                             b.date === formatDate(selectedDate)
+                      );
+                      return (
+                        <button
+                          key={slot.time}
+                          onClick={() => !isBooked && setSelectedTime(slot.time)}
+                          disabled={isBooked}
+                          className={`p-3 rounded-lg border-2 font-medium transition-all ${
+                            selectedTime === slot.time
+                              ? 'border-primary bg-primary text-white'
+                              : isBooked
+                              ? 'border-border bg-muted text-muted-foreground cursor-not-allowed'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          {slot.time}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -264,7 +325,7 @@ export default function Index() {
                   disabled={!selectedRoom || !selectedTime}
                   onClick={handleBooking}
                 >
-                  Забронировать
+                  Забронировать на {formatDate(selectedDate)}
                 </Button>
               </CardContent>
             </Card>
@@ -318,12 +379,39 @@ export default function Index() {
 
         {activeTab === 'schedule' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h1 className="text-3xl font-bold">Расписание бронирований</h1>
-              <Button onClick={() => setActiveTab('booking')}>
-                <Icon name="Plus" size={16} className="mr-2" />
-                Новое бронирование
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => {
+                    const newDate = new Date(selectedDate);
+                    newDate.setDate(newDate.getDate() - 1);
+                    setSelectedDate(newDate);
+                  }}
+                >
+                  <Icon name="ChevronLeft" size={20} />
+                </Button>
+                <div className="px-4 py-2 bg-primary/10 rounded-lg font-medium min-w-[140px] text-center">
+                  {isToday(selectedDate) ? 'Сегодня' : isTomorrow(selectedDate) ? 'Завтра' : formatDateShort(selectedDate)}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => {
+                    const newDate = new Date(selectedDate);
+                    newDate.setDate(newDate.getDate() + 1);
+                    setSelectedDate(newDate);
+                  }}
+                >
+                  <Icon name="ChevronRight" size={20} />
+                </Button>
+                <Button onClick={() => setActiveTab('booking')}>
+                  <Icon name="Plus" size={16} className="mr-2" />
+                  <span className="hidden sm:inline">Новое бронирование</span>
+                </Button>
+              </div>
             </div>
             
             <Card className="overflow-hidden">
@@ -360,7 +448,9 @@ export default function Index() {
                         </td>
                         {rooms.map((room) => {
                           const booking = bookings.find(
-                            b => b.roomId === room.id && b.time === slot.time
+                            b => b.roomId === room.id && 
+                                 b.time === slot.time && 
+                                 b.date === formatDate(selectedDate)
                           );
                           return (
                             <td key={room.id} className="p-2">
@@ -369,9 +459,6 @@ export default function Index() {
                                   <div className="flex items-center gap-2">
                                     <Icon name="CheckCircle2" size={14} className="text-primary" />
                                     <span className="font-medium text-sm">Забронировано</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    {booking.date}
                                   </div>
                                 </div>
                               ) : (
